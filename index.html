@@ -1,0 +1,1117 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plan de Pasantía IA - Centro de Productividad Personal</title>
+    
+    <!-- SEO Meta Tags -->
+    <meta name="description" content="Aplicación interactiva completa para gestionar tu plan de pasantía en IA con sistema de tareas, notas, hábitos, calendario, análisis de productividad y mucho más.">
+    <meta name="author" content="Tu Nombre">
+    <meta name="theme-color" content="#E8A87C">
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Fira+Code:wght@400;500;600&display=swap" rel="stylesheet">
+    
+    <!-- Chart.js for data visualization -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <!-- Custom Styles -->
+    <link rel="stylesheet" href="CSS/style.css">
+    
+    <link rel="icon" type="image/png" href="assets/images/logo.png">
+</head>
+<body>
+    <!-- Theme Toggle (Fixed Position) -->
+    <button id="themeToggle" class="theme-toggle" aria-label="Cambiar tema" data-testid="button-theme-toggle">
+        <i class="fas fa-moon"></i>
+    </button>
+
+    <!-- Main Container -->
+    <div class="container">
+        <!-- Header -->
+        <header class="app-header" data-testid="header-main">
+            <div class="header-content">
+                <div class="logo-section">
+                    <img src="assets/images/logo.png" alt="Logo Plan IA" class="logo-img">
+                    <div>
+                        <h1 class="app-title">Plan de Pasantía IA</h1>
+                        <p class="app-subtitle">Centro de Productividad Personal</p>
+                    </div>
+                </div>
+                <div class="header-actions">
+                    <button class="btn-icon" onclick="showAIInsights()" title="Insights de IA" data-testid="button-ai-insights">
+                        <i class="fas fa-brain"></i>
+                    </button>
+                    <button class="btn-icon" onclick="generateSmartTasks()" title="Generar Tareas con IA" data-testid="button-generate-tasks">
+                        <i class="fas fa-magic"></i>
+                    </button>
+                    <button class="btn-icon" id="exportDataBtn" title="Exportar Datos" data-testid="button-export-data">
+                        <i class="fas fa-download"></i>
+                    </button>
+                    <button class="btn-icon" id="settingsBtn" title="Configuración" data-testid="button-settings">
+                        <i class="fas fa-cog"></i>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Navigation Tabs -->
+        <nav class="main-nav" data-testid="nav-main">
+            <button class="nav-tab active" data-view="dashboard" data-testid="nav-tab-dashboard">
+                <i class="fas fa-th-large"></i>
+                <span>Dashboard</span>
+            </button>
+            <button class="nav-tab" data-view="tasks" data-testid="nav-tab-tasks">
+                <i class="fas fa-tasks"></i>
+                <span>Tareas</span>
+            </button>
+            <button class="nav-tab" data-view="notes" data-testid="nav-tab-notes">
+                <i class="fas fa-sticky-note"></i>
+                <span>Notas</span>
+            </button>
+            <button class="nav-tab" data-view="habits" data-testid="nav-tab-habits">
+                <i class="fas fa-check-circle"></i>
+                <span>Hábitos</span>
+            </button>
+            <button class="nav-tab" data-view="calendar" data-testid="nav-tab-calendar">
+                <i class="fas fa-calendar-alt"></i>
+                <span>Calendario</span>
+            </button>
+            <button class="nav-tab" data-view="roadmap" data-testid="nav-tab-roadmap">
+                <i class="fas fa-route"></i>
+                <span>Roadmap</span>
+            </button>
+            <button class="nav-tab" data-view="resources" data-testid="nav-tab-resources">
+                <i class="fas fa-book"></i>
+                <span>Recursos</span>
+            </button>
+            <button class="nav-tab" data-view="analytics" data-testid="nav-tab-analytics">
+                <i class="fas fa-chart-line"></i>
+                <span>Análisis</span>
+            </button>
+        </nav>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            
+            <!-- Dashboard View -->
+            <section id="dashboard-view" class="view active">
+                <div class="view-header">
+                    <h2 data-testid="text-dashboard-title">Dashboard de Productividad</h2>
+                    <p class="view-description">Vista general de tu progreso y actividades</p>
+                </div>
+
+                <!-- Quick Stats -->
+                <div class="stats-grid">
+                    <div class="stat-card" data-testid="card-stat-tasks">
+                        <div class="stat-icon" style="background: var(--primary-light);">
+                            <i class="fas fa-tasks"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="statTotalTasks" data-testid="text-stat-tasks">0</h3>
+                            <p>Tareas Activas</p>
+                        </div>
+                    </div>
+                    <div class="stat-card" data-testid="card-stat-completed">
+                        <div class="stat-icon" style="background: var(--success-light);">
+                            <i class="fas fa-check-double"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="statCompletedToday" data-testid="text-stat-completed">0</h3>
+                            <p>Completadas Hoy</p>
+                        </div>
+                    </div>
+                    <div class="stat-card" data-testid="card-stat-streak">
+                        <div class="stat-icon" style="background: var(--warning-light);">
+                            <i class="fas fa-fire"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="statStreak" data-testid="text-stat-streak">0</h3>
+                            <p>Días de Racha</p>
+                        </div>
+                    </div>
+                    <div class="stat-card" data-testid="card-stat-focus">
+                        <div class="stat-icon" style="background: var(--accent-light);">
+                            <i class="fas fa-clock"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="statFocusTime" data-testid="text-stat-focus">0h</h3>
+                            <p>Tiempo de Enfoque</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Dashboard Widgets Grid -->
+                <div class="dashboard-grid">
+                    <!-- Pomodoro Timer Widget -->
+                    <div class="widget pomodoro-widget" data-testid="widget-pomodoro">
+                        <div class="widget-header">
+                            <h3><i class="fas fa-stopwatch"></i> Temporizador Pomodoro</h3>
+                        </div>
+                        <div class="widget-content">
+                            <div class="pomodoro-display">
+                                <div class="pomodoro-circle">
+                                    <svg class="pomodoro-progress" width="200" height="200">
+                                        <circle cx="100" cy="100" r="90" class="pomodoro-bg"></circle>
+                                        <circle cx="100" cy="100" r="90" class="pomodoro-bar" id="pomodoroProgressBar"></circle>
+                                    </svg>
+                                    <div class="pomodoro-time" id="pomodoroTime" data-testid="text-pomodoro-time">25:00</div>
+                                </div>
+                                <div class="pomodoro-label" id="pomodoroLabel">Sesión de Trabajo</div>
+                            </div>
+                            <div class="pomodoro-controls">
+                                <button class="btn btn-primary" id="pomodoroStart" data-testid="button-pomodoro-start">
+                                    <i class="fas fa-play"></i> Iniciar
+                                </button>
+                                <button class="btn btn-secondary" id="pomodoroPause" disabled data-testid="button-pomodoro-pause">
+                                    <i class="fas fa-pause"></i> Pausar
+                                </button>
+                                <button class="btn btn-outline" id="pomodoroReset" data-testid="button-pomodoro-reset">
+                                    <i class="fas fa-redo"></i> Reiniciar
+                                </button>
+                            </div>
+                            <div class="pomodoro-stats">
+                                <span data-testid="text-pomodoro-sessions"><i class="fas fa-check-circle"></i> Sesiones hoy: <strong id="pomodoroSessionsToday">0</strong></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Today's Tasks Widget -->
+                    <div class="widget tasks-widget" data-testid="widget-today-tasks">
+                        <div class="widget-header">
+                            <h3><i class="fas fa-list-check"></i> Tareas de Hoy</h3>
+                            <button class="btn-icon-small" id="addQuickTask" data-testid="button-add-quick-task">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                        </div>
+                        <div class="widget-content" id="todayTasksList">
+                            <div class="empty-state">
+                                <i class="fas fa-clipboard-check"></i>
+                                <p>No hay tareas para hoy</p>
+                                <button class="btn btn-small" onclick="document.querySelector('[data-view=tasks]').click()">Crear tarea</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Habits Tracker Widget -->
+                    <div class="widget habits-widget" data-testid="widget-habits-tracker">
+                        <div class="widget-header">
+                            <h3><i class="fas fa-calendar-check"></i> Hábitos Diarios</h3>
+                        </div>
+                        <div class="widget-content" id="habitsQuickList">
+                            <div class="empty-state">
+                                <i class="fas fa-heartbeat"></i>
+                                <p>No hay hábitos configurados</p>
+                                <button class="btn btn-small" onclick="document.querySelector('[data-view=habits]').click()">Crear hábito</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Weekly Progress Chart -->
+                    <div class="widget chart-widget" data-testid="widget-weekly-chart">
+                        <div class="widget-header">
+                            <h3><i class="fas fa-chart-bar"></i> Progreso Semanal</h3>
+                        </div>
+                        <div class="widget-content">
+                            <canvas id="weeklyProgressChart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Recent Notes Widget -->
+                    <div class="widget notes-widget" data-testid="widget-recent-notes">
+                        <div class="widget-header">
+                            <h3><i class="fas fa-note-sticky"></i> Notas Recientes</h3>
+                        </div>
+                        <div class="widget-content" id="recentNotesList">
+                            <div class="empty-state">
+                                <i class="fas fa-pen"></i>
+                                <p>No hay notas recientes</p>
+                                <button class="btn btn-small" onclick="document.querySelector('[data-view=notes]').click()">Crear nota</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quick Goals Widget -->
+                    <div class="widget goals-widget" data-testid="widget-goals">
+                        <div class="widget-header">
+                            <h3><i class="fas fa-bullseye"></i> Metas del Mes</h3>
+                            <button class="btn-icon-small" id="addGoalBtn" data-testid="button-add-goal">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                        </div>
+                        <div class="widget-content" id="goalsList">
+                            <div class="empty-state">
+                                <i class="fas fa-trophy"></i>
+                                <p>No hay metas definidas</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Tasks View -->
+            <section id="tasks-view" class="view">
+                <div class="view-header">
+                    <div>
+                        <h2 data-testid="text-tasks-title">Gestión de Tareas</h2>
+                        <p class="view-description">Organiza y prioriza tus tareas con sistema drag-and-drop</p>
+                    </div>
+                    <button class="btn btn-primary" id="addTaskBtn" data-testid="button-add-task">
+                        <i class="fas fa-plus"></i> Nueva Tarea
+                    </button>
+                </div>
+
+                <!-- Task Filters -->
+                <div class="task-filters" data-testid="div-task-filters">
+                    <div class="filter-group">
+                        <button class="filter-btn active" data-filter="all" data-testid="filter-all">
+                            <i class="fas fa-list"></i> Todas
+                        </button>
+                        <button class="filter-btn" data-filter="pending" data-testid="filter-pending">
+                            <i class="fas fa-circle"></i> Pendientes
+                        </button>
+                        <button class="filter-btn" data-filter="completed" data-testid="filter-completed">
+                            <i class="fas fa-check-circle"></i> Completadas
+                        </button>
+                    </div>
+                    <div class="filter-group">
+                        <button class="filter-btn" data-priority="high" data-testid="filter-high">
+                            <i class="fas fa-circle" style="color: var(--danger);"></i> Alta
+                        </button>
+                        <button class="filter-btn" data-priority="medium" data-testid="filter-medium">
+                            <i class="fas fa-circle" style="color: var(--warning);"></i> Media
+                        </button>
+                        <button class="filter-btn" data-priority="low" data-testid="filter-low">
+                            <i class="fas fa-circle" style="color: var(--info);"></i> Baja
+                        </button>
+                    </div>
+                    <div class="search-box">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="taskSearch" placeholder="Buscar tareas..." data-testid="input-task-search">
+                    </div>
+                </div>
+
+                <!-- Tasks Board -->
+                <div class="tasks-board" data-testid="div-tasks-board">
+                    <div class="tasks-column">
+                        <div class="column-header">
+                            <h3><i class="fas fa-clock"></i> Por Hacer</h3>
+                            <span class="task-count" id="todoCount">0</span>
+                        </div>
+                        <div class="tasks-list" id="todoList" data-status="todo">
+                            <!-- Tasks will be inserted here -->
+                        </div>
+                    </div>
+                    <div class="tasks-column">
+                        <div class="column-header">
+                            <h3><i class="fas fa-spinner"></i> En Progreso</h3>
+                            <span class="task-count" id="inProgressCount">0</span>
+                        </div>
+                        <div class="tasks-list" id="inProgressList" data-status="in-progress">
+                            <!-- Tasks will be inserted here -->
+                        </div>
+                    </div>
+                    <div class="tasks-column">
+                        <div class="column-header">
+                            <h3><i class="fas fa-check-double"></i> Completadas</h3>
+                            <span class="task-count" id="completedCount">0</span>
+                        </div>
+                        <div class="tasks-list" id="completedList" data-status="completed">
+                            <!-- Tasks will be inserted here -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Notes View -->
+            <section id="notes-view" class="view">
+                <div class="view-header">
+                    <div>
+                        <h2 data-testid="text-notes-title">Editor de Notas</h2>
+                        <p class="view-description">Crea y organiza tus notas con soporte Markdown</p>
+                    </div>
+                    <button class="btn btn-primary" id="addNoteBtn" data-testid="button-add-note">
+                        <i class="fas fa-plus"></i> Nueva Nota
+                    </button>
+                </div>
+
+                <div class="notes-container">
+                    <!-- Notes Sidebar -->
+                    <div class="notes-sidebar">
+                        <div class="notes-search">
+                            <i class="fas fa-search"></i>
+                            <input type="text" id="notesSearch" placeholder="Buscar notas..." data-testid="input-notes-search">
+                        </div>
+                        <div class="notes-categories" data-testid="div-notes-categories">
+                            <button class="category-btn active" data-category="all">
+                                <i class="fas fa-th-large"></i> Todas
+                            </button>
+                            <button class="category-btn" data-category="estudio">
+                                <i class="fas fa-book"></i> Estudio
+                            </button>
+                            <button class="category-btn" data-category="proyectos">
+                                <i class="fas fa-project-diagram"></i> Proyectos
+                            </button>
+                            <button class="category-btn" data-category="ideas">
+                                <i class="fas fa-lightbulb"></i> Ideas
+                            </button>
+                            <button class="category-btn" data-category="personal">
+                                <i class="fas fa-user"></i> Personal
+                            </button>
+                        </div>
+                        <div class="notes-list" id="notesList">
+                            <div class="empty-state">
+                                <i class="fas fa-file-alt"></i>
+                                <p>No hay notas</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Notes Editor -->
+                    <div class="notes-editor" id="notesEditor">
+                        <div class="empty-state-large">
+                            <i class="fas fa-pen-fancy"></i>
+                            <h3>Selecciona una nota o crea una nueva</h3>
+                            <p>Tus notas aparecerán aquí con soporte para formato Markdown</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Habits View -->
+            <section id="habits-view" class="view">
+                <div class="view-header">
+                    <div>
+                        <h2 data-testid="text-habits-title">Tracker de Hábitos</h2>
+                        <p class="view-description">Construye hábitos positivos y mantén rachas</p>
+                    </div>
+                    <button class="btn btn-primary" id="addHabitBtn" data-testid="button-add-habit">
+                        <i class="fas fa-plus"></i> Nuevo Hábito
+                    </button>
+                </div>
+
+                <!-- Habits Stats -->
+                <div class="habits-stats">
+                    <div class="habit-stat-card">
+                        <div class="habit-stat-icon">
+                            <i class="fas fa-fire"></i>
+                        </div>
+                        <div>
+                            <h3 id="longestStreak" data-testid="text-longest-streak">0</h3>
+                            <p>Racha Más Larga</p>
+                        </div>
+                    </div>
+                    <div class="habit-stat-card">
+                        <div class="habit-stat-icon">
+                            <i class="fas fa-check-double"></i>
+                        </div>
+                        <div>
+                            <h3 id="totalHabitsCompleted" data-testid="text-total-habits-completed">0</h3>
+                            <p>Total Completados</p>
+                        </div>
+                    </div>
+                    <div class="habit-stat-card">
+                        <div class="habit-stat-icon">
+                            <i class="fas fa-percentage"></i>
+                        </div>
+                        <div>
+                            <h3 id="completionRate" data-testid="text-completion-rate">0%</h3>
+                            <p>Tasa de Cumplimiento</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Habits List -->
+                <div class="habits-list" id="habitsList">
+                    <div class="empty-state">
+                        <i class="fas fa-seedling"></i>
+                        <p>No hay hábitos configurados</p>
+                        <button class="btn btn-primary" onclick="document.getElementById('addHabitBtn').click()">Crear tu primer hábito</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Calendar View -->
+            <section id="calendar-view" class="view">
+                <div class="view-header">
+                    <div>
+                        <h2 data-testid="text-calendar-title">Calendario de Actividades</h2>
+                        <p class="view-description">Visualiza y gestiona tu agenda</p>
+                    </div>
+                    <div class="calendar-view-switcher">
+                        <button class="view-switch-btn active" data-calendar-view="month" data-testid="button-view-month">
+                            <i class="fas fa-calendar"></i> Mes
+                        </button>
+                        <button class="view-switch-btn" data-calendar-view="week" data-testid="button-view-week">
+                            <i class="fas fa-calendar-week"></i> Semana
+                        </button>
+                        <button class="view-switch-btn" data-calendar-view="day" data-testid="button-view-day">
+                            <i class="fas fa-calendar-day"></i> Día
+                        </button>
+                    </div>
+                </div>
+
+                <div class="calendar-container">
+                    <!-- Calendar Header -->
+                    <div class="calendar-header">
+                        <button class="btn-icon" id="calendarPrev" data-testid="button-calendar-prev">
+                            <i class="fas fa-chevron-left"></i>
+                        </button>
+                        <h3 id="calendarTitle" data-testid="text-calendar-title-display">Enero 2025</h3>
+                        <button class="btn-icon" id="calendarNext" data-testid="button-calendar-next">
+                            <i class="fas fa-chevron-right"></i>
+                        </button>
+                        <button class="btn btn-outline" id="calendarToday" data-testid="button-calendar-today">
+                            <i class="fas fa-calendar-day"></i> Hoy
+                        </button>
+                        <button class="btn btn-primary" id="addEventBtn" data-testid="button-add-event">
+                            <i class="fas fa-plus"></i> Evento
+                        </button>
+                    </div>
+
+                    <!-- Calendar Grid (Month View) -->
+                    <div id="calendarMonthView" class="calendar-view-content">
+                        <div class="calendar-weekdays">
+                            <div class="weekday">Dom</div>
+                            <div class="weekday">Lun</div>
+                            <div class="weekday">Mar</div>
+                            <div class="weekday">Mié</div>
+                            <div class="weekday">Jue</div>
+                            <div class="weekday">Vie</div>
+                            <div class="weekday">Sáb</div>
+                        </div>
+                        <div class="calendar-grid" id="calendarGrid">
+                            <!-- Days will be inserted here -->
+                        </div>
+                    </div>
+
+                    <!-- Week View -->
+                    <div id="calendarWeekView" class="calendar-view-content" style="display: none;">
+                        <div class="week-grid" id="weekGrid">
+                            <!-- Week schedule will be inserted here -->
+                        </div>
+                    </div>
+
+                    <!-- Day View -->
+                    <div id="calendarDayView" class="calendar-view-content" style="display: none;">
+                        <div class="day-schedule" id="daySchedule">
+                            <!-- Day schedule will be inserted here -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Roadmap View -->
+            <section id="roadmap-view" class="view">
+                <div class="view-header">
+                    <h2 data-testid="text-roadmap-title">Roadmap de Estudio en IA</h2>
+                    <p class="view-description">Tu plan de aprendizaje estructurado para los próximos 12 meses</p>
+                </div>
+
+                <!-- Timeline Overview -->
+                <div class="timeline-container">
+                    <div class="timeline-header">
+                        <h3><i class="fas fa-map-marked-alt"></i> Hoja de Ruta de 12 Meses</h3>
+                    </div>
+                    <div class="timeline-phases" id="timelinePhases">
+                        <!-- Timeline will be generated here -->
+                    </div>
+                </div>
+
+                <!-- Study Plan Accordion -->
+                <div class="roadmap-content">
+                    <div class="roadmap-section">
+                        <button class="roadmap-section-header" data-testid="button-roadmap-section-python">
+                            <div class="section-title">
+                                <i class="fab fa-python"></i>
+                                <h3>Python y Análisis de Datos</h3>
+                            </div>
+                            <i class="fas fa-chevron-down"></i>
+                        </button>
+                        <div class="roadmap-section-content" id="pythonRoadmap">
+                            <!-- Python topics will be inserted here -->
+                        </div>
+                    </div>
+
+                    <div class="roadmap-section">
+                        <button class="roadmap-section-header" data-testid="button-roadmap-section-math">
+                            <div class="section-title">
+                                <i class="fas fa-calculator"></i>
+                                <h3>Matemáticas para IA</h3>
+                            </div>
+                            <i class="fas fa-chevron-down"></i>
+                        </button>
+                        <div class="roadmap-section-content">
+                            <div class="roadmap-topic">
+                                <h4>Álgebra Lineal</h4>
+                                <p>Vectores, matrices, multiplicación de matrices, sistemas de ecuaciones, espacios vectoriales</p>
+                                <div class="topic-tags">
+                                    <span class="tag">Fundamental</span>
+                                    <span class="tag">8-10 semanas</span>
+                                </div>
+                            </div>
+                            <div class="roadmap-topic">
+                                <h4>Cálculo Diferencial</h4>
+                                <p>Derivadas, reglas de la cadena, gradientes - esencial para entender el aprendizaje de modelos</p>
+                                <div class="topic-tags">
+                                    <span class="tag">Fundamental</span>
+                                    <span class="tag">6-8 semanas</span>
+                                </div>
+                            </div>
+                            <div class="roadmap-topic">
+                                <h4>Probabilidad y Estadística</h4>
+                                <p>Distribuciones, esperanza, varianza, Bayes, pruebas de hipótesis</p>
+                                <div class="topic-tags">
+                                    <span class="tag">Importante</span>
+                                    <span class="tag">6-8 semanas</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="roadmap-section">
+                        <button class="roadmap-section-header" data-testid="button-roadmap-section-ml">
+                            <div class="section-title">
+                                <i class="fas fa-brain"></i>
+                                <h3>Machine Learning</h3>
+                            </div>
+                            <i class="fas fa-chevron-down"></i>
+                        </button>
+                        <div class="roadmap-section-content">
+                            <div class="roadmap-topic">
+                                <h4>ML Clásico</h4>
+                                <p>Regresión Lineal/Logística, Árboles de Decisión, Random Forest, SVM, KNN, Clustering</p>
+                                <div class="topic-tags">
+                                    <span class="tag">Core</span>
+                                    <span class="tag">Scikit-Learn</span>
+                                </div>
+                            </div>
+                            <div class="roadmap-topic">
+                                <h4>Deep Learning</h4>
+                                <p>Redes Neuronales, CNNs para visión, RNNs/LSTMs para secuencias, Transfer Learning</p>
+                                <div class="topic-tags">
+                                    <span class="tag">Avanzado</span>
+                                    <span class="tag">TensorFlow/PyTorch</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Resources View -->
+            <section id="resources-view" class="view">
+                <div class="view-header">
+                    <div>
+                        <h2 data-testid="text-resources-title">Recursos Educativos</h2>
+                        <p class="view-description">Gestiona cursos, enlaces, videos y materiales de estudio</p>
+                    </div>
+                    <button class="btn btn-primary" id="addResourceBtn" data-testid="button-add-resource">
+                        <i class="fas fa-plus"></i> Agregar Recurso
+                    </button>
+                </div>
+
+                <!-- Resource Categories -->
+                <div class="resource-categories" data-testid="div-resource-categories">
+                    <button class="resource-category-btn active" data-resource-type="all">
+                        <i class="fas fa-th"></i> Todos
+                    </button>
+                    <button class="resource-category-btn" data-resource-type="course">
+                        <i class="fas fa-graduation-cap"></i> Cursos
+                    </button>
+                    <button class="resource-category-btn" data-resource-type="video">
+                        <i class="fas fa-video"></i> Videos
+                    </button>
+                    <button class="resource-category-btn" data-resource-type="article">
+                        <i class="fas fa-newspaper"></i> Artículos
+                    </button>
+                    <button class="resource-category-btn" data-resource-type="book">
+                        <i class="fas fa-book"></i> Libros
+                    </button>
+                    <button class="resource-category-btn" data-resource-type="link">
+                        <i class="fas fa-link"></i> Enlaces
+                    </button>
+                </div>
+
+                <!-- Resources Grid -->
+                <div class="resources-grid" id="resourcesGrid">
+                    <div class="empty-state">
+                        <i class="fas fa-book-reader"></i>
+                        <p>No hay recursos guardados</p>
+                        <button class="btn btn-primary" onclick="document.getElementById('addResourceBtn').click()">Agregar primer recurso</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Analytics View -->
+            <section id="analytics-view" class="view">
+                <div class="view-header">
+                    <h2 data-testid="text-analytics-title">Análisis de Productividad</h2>
+                    <p class="view-description">Visualiza tus métricas y progreso</p>
+                </div>
+
+                <!-- Analytics Cards -->
+                <div class="analytics-grid">
+                    <div class="analytics-card">
+                        <h3><i class="fas fa-chart-line"></i> Productividad Semanal</h3>
+                        <canvas id="productivityChart"></canvas>
+                    </div>
+
+                    <div class="analytics-card">
+                        <h3><i class="fas fa-chart-pie"></i> Distribución de Tiempo</h3>
+                        <canvas id="timeDistributionChart"></canvas>
+                    </div>
+
+                    <div class="analytics-card">
+                        <h3><i class="fas fa-tasks"></i> Tareas por Estado</h3>
+                        <canvas id="tasksStatusChart"></canvas>
+                    </div>
+
+                    <div class="analytics-card">
+                        <h3><i class="fas fa-fire"></i> Hábitos - Últimos 30 Días</h3>
+                        <canvas id="habitsHeatmap"></canvas>
+                    </div>
+
+                    <div class="analytics-card full-width">
+                        <h3><i class="fas fa-clock"></i> Sesiones Pomodoro por Día</h3>
+                        <canvas id="pomodoroSessionsChart"></canvas>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- Modal for Task Form -->
+    <div id="taskModal" class="modal">
+        <div class="modal-content" data-testid="modal-task">
+            <div class="modal-header">
+                <h3 id="taskModalTitle">Nueva Tarea</h3>
+                <button class="modal-close" data-testid="button-close-task-modal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form id="taskForm" class="modal-form">
+                <div class="form-group">
+                    <label for="taskTitle">Título *</label>
+                    <input type="text" id="taskTitle" required placeholder="Ej: Estudiar Pandas" data-testid="input-task-title">
+                </div>
+                <div class="form-group">
+                    <label for="taskDescription">Descripción</label>
+                    <textarea id="taskDescription" rows="3" placeholder="Detalles adicionales..." data-testid="textarea-task-description"></textarea>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="taskPriority">Prioridad</label>
+                        <select id="taskPriority" data-testid="select-task-priority">
+                            <option value="low">Baja</option>
+                            <option value="medium" selected>Media</option>
+                            <option value="high">Alta</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="taskDueDate">Fecha límite</label>
+                        <input type="date" id="taskDueDate" data-testid="input-task-due-date">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="taskTags">Etiquetas (separadas por coma)</label>
+                    <input type="text" id="taskTags" placeholder="python, estudio, proyecto" data-testid="input-task-tags">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline" data-close-modal data-testid="button-cancel-task">Cancelar</button>
+                    <button type="submit" class="btn btn-primary" data-testid="button-save-task">Guardar Tarea</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal for Note Editor -->
+    <div id="noteModal" class="modal">
+        <div class="modal-content modal-large" data-testid="modal-note">
+            <div class="modal-header">
+                <h3 id="noteModalTitle">Nueva Nota</h3>
+                <button class="modal-close" data-testid="button-close-note-modal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form id="noteForm" class="modal-form">
+                <div class="form-group">
+                    <label for="noteTitle">Título *</label>
+                    <input type="text" id="noteTitle" required placeholder="Título de la nota" data-testid="input-note-title">
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="noteCategory">Categoría</label>
+                        <select id="noteCategory" data-testid="select-note-category">
+                            <option value="estudio">Estudio</option>
+                            <option value="proyectos">Proyectos</option>
+                            <option value="ideas">Ideas</option>
+                            <option value="personal">Personal</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="noteTags">Etiquetas</label>
+                        <input type="text" id="noteTags" placeholder="ia, python, notas" data-testid="input-note-tags">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="noteContent">Contenido (Markdown soportado)</label>
+                    <textarea id="noteContent" rows="10" placeholder="Escribe tu nota aquí... Puedes usar Markdown: **negrita**, *cursiva*, # Título" data-testid="textarea-note-content"></textarea>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline" data-close-modal data-testid="button-cancel-note">Cancelar</button>
+                    <button type="submit" class="btn btn-primary" data-testid="button-save-note">Guardar Nota</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal for Habit Form -->
+    <div id="habitModal" class="modal">
+        <div class="modal-content" data-testid="modal-habit">
+            <div class="modal-header">
+                <h3>Nuevo Hábito</h3>
+                <button class="modal-close" data-testid="button-close-habit-modal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form id="habitForm" class="modal-form">
+                <div class="form-group">
+                    <label for="habitName">Nombre del Hábito *</label>
+                    <input type="text" id="habitName" required placeholder="Ej: Estudiar Python 1 hora" data-testid="input-habit-name">
+                </div>
+                <div class="form-group">
+                    <label for="habitDescription">Descripción</label>
+                    <textarea id="habitDescription" rows="2" placeholder="¿Por qué es importante este hábito?" data-testid="textarea-habit-description"></textarea>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="habitFrequency">Frecuencia</label>
+                        <select id="habitFrequency" data-testid="select-habit-frequency">
+                            <option value="daily">Diaria</option>
+                            <option value="weekly">Semanal</option>
+                            <option value="custom">Personalizada</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="habitIcon">Icono</label>
+                        <select id="habitIcon" data-testid="select-habit-icon">
+                            <option value="book">📚 Libro</option>
+                            <option value="code">💻 Código</option>
+                            <option value="exercise">🏃 Ejercicio</option>
+                            <option value="meditation">🧘 Meditación</option>
+                            <option value="water">💧 Agua</option>
+                            <option value="sleep">😴 Dormir</option>
+                            <option value="study">📝 Estudio</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline" data-close-modal data-testid="button-cancel-habit">Cancelar</button>
+                    <button type="submit" class="btn btn-primary" data-testid="button-save-habit">Crear Hábito</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal for Event Form -->
+    <div id="eventModal" class="modal">
+        <div class="modal-content" data-testid="modal-event">
+            <div class="modal-header">
+                <h3>Nuevo Evento</h3>
+                <button class="modal-close" data-testid="button-close-event-modal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form id="eventForm" class="modal-form">
+                <div class="form-group">
+                    <label for="eventTitle">Título *</label>
+                    <input type="text" id="eventTitle" required placeholder="Nombre del evento" data-testid="input-event-title">
+                </div>
+                <div class="form-group">
+                    <label for="eventDescription">Descripción</label>
+                    <textarea id="eventDescription" rows="2" data-testid="textarea-event-description"></textarea>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="eventDate">Fecha *</label>
+                        <input type="date" id="eventDate" required data-testid="input-event-date">
+                    </div>
+                    <div class="form-group">
+                        <label for="eventTime">Hora</label>
+                        <input type="time" id="eventTime" data-testid="input-event-time">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="eventColor">Color</label>
+                    <select id="eventColor" data-testid="select-event-color">
+                        <option value="primary">Primario</option>
+                        <option value="success">Éxito</option>
+                        <option value="warning">Advertencia</option>
+                        <option value="danger">Importante</option>
+                        <option value="info">Información</option>
+                    </select>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline" data-close-modal data-testid="button-cancel-event">Cancelar</button>
+                    <button type="submit" class="btn btn-primary" data-testid="button-save-event">Guardar Evento</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal for Resource Form -->
+    <div id="resourceModal" class="modal">
+        <div class="modal-content" data-testid="modal-resource">
+            <div class="modal-header">
+                <h3>Agregar Recurso</h3>
+                <button class="modal-close" data-testid="button-close-resource-modal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form id="resourceForm" class="modal-form">
+                <div class="form-group">
+                    <label for="resourceTitle">Título *</label>
+                    <input type="text" id="resourceTitle" required placeholder="Nombre del recurso" data-testid="input-resource-title">
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="resourceType">Tipo *</label>
+                        <select id="resourceType" data-testid="select-resource-type">
+                            <option value="course">Curso</option>
+                            <option value="video">Video</option>
+                            <option value="article">Artículo</option>
+                            <option value="book">Libro</option>
+                            <option value="link">Enlace</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="resourceProgress">Progreso (%)</label>
+                        <input type="number" id="resourceProgress" min="0" max="100" value="0" data-testid="input-resource-progress">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="resourceUrl">URL</label>
+                    <input type="url" id="resourceUrl" placeholder="https://..." data-testid="input-resource-url">
+                </div>
+                <div class="form-group">
+                    <label for="resourceNotes">Notas</label>
+                    <textarea id="resourceNotes" rows="3" placeholder="Apuntes sobre este recurso..." data-testid="textarea-resource-notes"></textarea>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline" data-close-modal data-testid="button-cancel-resource">Cancelar</button>
+                    <button type="submit" class="btn btn-primary" data-testid="button-save-resource">Guardar Recurso</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal for Goal Form -->
+    <div id="goalModal" class="modal">
+        <div class="modal-content" data-testid="modal-goal">
+            <div class="modal-header">
+                <h3>Nueva Meta</h3>
+                <button class="modal-close" data-testid="button-close-goal-modal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form id="goalForm" class="modal-form">
+                <div class="form-group">
+                    <label for="goalTitle">Meta *</label>
+                    <input type="text" id="goalTitle" required placeholder="Ej: Completar curso de ML" data-testid="input-goal-title">
+                </div>
+                <div class="form-group">
+                    <label for="goalTarget">Objetivo (valor numérico)</label>
+                    <input type="number" id="goalTarget" placeholder="Ej: 100" data-testid="input-goal-target">
+                </div>
+                <div class="form-group">
+                    <label for="goalCurrent">Progreso actual</label>
+                    <input type="number" id="goalCurrent" value="0" data-testid="input-goal-current">
+                </div>
+                <div class="form-group">
+                    <label for="goalDeadline">Fecha límite</label>
+                    <input type="date" id="goalDeadline" data-testid="input-goal-deadline">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline" data-close-modal data-testid="button-cancel-goal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary" data-testid="button-save-goal">Crear Meta</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal for Export Options -->
+    <div id="exportModal" class="modal">
+        <div class="modal-content" data-testid="modal-export">
+            <div class="modal-header">
+                <h3>Exportar Datos</h3>
+                <button class="modal-close" data-testid="button-close-export-modal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p>Selecciona el formato para exportar tus datos:</p>
+                <div class="export-options">
+                    <button class="export-option" id="exportJSON" data-testid="button-export-json">
+                        <i class="fas fa-file-code"></i>
+                        <h4>JSON</h4>
+                        <p>Todos los datos en formato JSON</p>
+                    </button>
+                    <button class="export-option" id="exportCSV" data-testid="button-export-csv">
+                        <i class="fas fa-file-csv"></i>
+                        <h4>CSV</h4>
+                        <p>Tareas y eventos en CSV</p>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notifications Container -->
+    <div id="toastContainer" class="toast-container" data-testid="div-toast-container"></div>
+
+    <!-- AI Chat Assistant (Floating) -->
+    <div id="aiChatWidget" class="ai-chat-widget">
+        <button id="aiChatToggle" class="ai-chat-toggle" title="Asistente IA">
+            <i class="fas fa-robot"></i>
+        </button>
+        <div id="aiChatPanel" class="ai-chat-panel">
+            <div class="ai-chat-header">
+                <h3><i class="fas fa-brain"></i> Asistente IA</h3>
+                <button class="btn-icon-small" id="aiChatClose">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div id="aiChatMessages" class="ai-chat-messages">
+                <div class="ai-message">
+                    <div class="ai-avatar"><i class="fas fa-robot"></i></div>
+                    <div class="ai-message-content">
+                        <p>¡Hola! Soy tu asistente de productividad con IA. ¿En qué puedo ayudarte hoy?</p>
+                        <div class="ai-suggestions">
+                            <button class="ai-suggestion-btn" data-suggestion="Analiza mi productividad">📊 Analizar productividad</button>
+                            <button class="ai-suggestion-btn" data-suggestion="Genera tareas para estudiar ML">🎯 Generar tareas</button>
+                            <button class="ai-suggestion-btn" data-suggestion="Dame consejos de estudio">💡 Consejos de estudio</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="ai-chat-input">
+                <input type="text" id="aiChatInputField" placeholder="Escribe tu mensaje...">
+                <button id="aiChatSend" class="btn-icon">
+                    <i class="fas fa-paper-plane"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Capture (Floating) -->
+    <button id="quickCaptureBtn" class="quick-capture-btn" title="Captura rápida (Ctrl+Shift+N)">
+        <i class="fas fa-plus"></i>
+    </button>
+    <div id="quickCapturePanel" class="quick-capture-panel">
+        <div class="quick-capture-header">
+            <h3>Captura Rápida</h3>
+            <button class="btn-icon-small" id="quickCaptureClose">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <textarea id="quickCaptureText" placeholder="Escribe una idea, tarea o nota rápida..." rows="4"></textarea>
+        <div class="quick-capture-actions">
+            <button class="btn btn-small btn-primary" id="quickCaptureAsTask">
+                <i class="fas fa-tasks"></i> Como Tarea
+            </button>
+            <button class="btn btn-small btn-secondary" id="quickCaptureAsNote">
+                <i class="fas fa-sticky-note"></i> Como Nota
+            </button>
+        </div>
+    </div>
+
+    <!-- Global Search Modal -->
+    <div id="globalSearchModal" class="modal">
+        <div class="modal-content modal-large">
+            <div class="search-modal-header">
+                <div class="search-box-large">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="globalSearchInput" placeholder="Buscar en tareas, notas, eventos, recursos..." autofocus>
+                    <kbd class="search-kbd">Ctrl+K</kbd>
+                </div>
+                <button class="modal-close">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="search-results" id="globalSearchResults">
+                <div class="empty-state">
+                    <i class="fas fa-search"></i>
+                    <p>Escribe para buscar en toda tu información</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- AI Insights Modal -->
+    <div id="aiInsightsModal" class="modal">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h3><i class="fas fa-lightbulb"></i> Insights de IA</h3>
+                <button class="modal-close">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body" id="aiInsightsContent">
+                <div class="loading-state">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    <p>Analizando tus datos...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Focus Mode Overlay -->
+    <div id="focusModeOverlay" class="focus-mode-overlay">
+        <button id="exitFocusMode" class="btn btn-outline">
+            <i class="fas fa-times"></i> Salir de Modo Focus
+        </button>
+        <div class="focus-content">
+            <h1 id="focusTaskTitle">Modo Focus</h1>
+            <div class="focus-timer" id="focusTimer">25:00</div>
+            <div class="focus-controls">
+                <button class="btn btn-primary" id="focusStart">
+                    <i class="fas fa-play"></i> Iniciar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Achievement Toast -->
+    <div id="achievementToast" class="achievement-toast">
+        <div class="achievement-content">
+            <i class="fas fa-trophy achievement-icon"></i>
+            <div>
+                <h4 id="achievementTitle">¡Logro Desbloqueado!</h4>
+                <p id="achievementDescription">Has completado tu primera tarea</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay">
+        <div class="loading-spinner">
+            <i class="fas fa-circle-notch fa-spin"></i>
+            <p>Cargando...</p>
+        </div>
+    </div>
+
+    <!-- AI Module -->
+    <script src="JS/ai-module.js"></script>
+    
+    <!-- Main JavaScript -->
+    <script src="JS/script.js"></script>
+</body>
+</html>
