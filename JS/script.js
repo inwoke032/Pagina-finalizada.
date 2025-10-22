@@ -360,7 +360,7 @@ function renderWeeklyProgressChart() {
     if (!ctx) return;
     
     // Destroy previous chart if exists
-    if (window.weeklyChart && typeof window.weeklyChart.destroy === 'function') {
+    if (window.weeklyChart) {
         window.weeklyChart.destroy();
     }
     
@@ -1201,50 +1201,7 @@ function renderMonthView() {
     document.getElementById('calendarWeekView').style.display = 'none';
     document.getElementById('calendarDayView').style.display = 'none';
     
-    const year = AppState.calendarDate.getFullYear();
-    const month = AppState.calendarDate.getMonth();
-    
-    document.getElementById('calendarTitle').textContent = 
-        new Date(year, month).toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
-    
-    const firstDay = new Date(year, month, 1).getDay();
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
-    
-    const grid = document.getElementById('calendarGrid');
-    grid.innerHTML = '';
-    
-    // Previous month days
-    const prevMonthDays = new Date(year, month, 0).getDate();
-    for (let i = firstDay - 1; i >= 0; i--) {
-        const day = prevMonthDays - i;
-        const cell = createCalendarDay(day, true);
-        grid.appendChild(cell);
-    }
-    
-    // Current month days
-    const today = new Date();
-    for (let day = 1; day <= daysInMonth; day++) {
-        const date = new Date(year, month, day);
-        const isToday = date.toDateString() === today.toDateString();
-        const dateStr = date.toISOString().split('T')[0];
-        const hasEvents = AppState.events.some(e => e.date === dateStr);
-        
-        const cell = document.createElement('div');
-        cell.className = `calendar-day ${isToday ? 'today' : ''} ${hasEvents ? 'has-events' : ''}`;
-        cell.innerHTML = `<div class="day-number">${day}</div>`;
-        cell.addEventListener('click', () => {
-            AppState.calendarDate = new Date(year, month, day);
-            document.querySelector('[data-calendar-view="day"]').click();
-        });
-        grid.appendChild(cell);
-    }
-    
-    // Next month days
-    const remainingDays = 42 - (firstDay + daysInMonth);
-    for (let day = 1; day <= remainingDays; day++) {
-        const cell = createCalendarDay(day, true);
-        grid.appendChild(cell);
-    }
+    renderInteractiveCalendar();
 }
 
 function createCalendarDay(day, isOtherMonth = false) {
@@ -1278,36 +1235,8 @@ function renderDayView() {
     document.getElementById('calendarTitle').textContent = 
         AppState.calendarDate.toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
     
-    const dateStr = AppState.calendarDate.toISOString().split('T')[0];
-    const dayEvents = AppState.events.filter(e => e.date === dateStr);
-    
-    const daySchedule = document.getElementById('daySchedule');
-    
-    if (dayEvents.length === 0) {
-        daySchedule.innerHTML = `
-            <div class="empty-state">
-                <i class="fas fa-calendar-plus"></i>
-                <p>No hay eventos para este día</p>
-                <button class="btn btn-primary" onclick="document.getElementById('addEventBtn').click()">Agregar evento</button>
-            </div>
-        `;
-        return;
-    }
-    
-    daySchedule.innerHTML = dayEvents.map(event => `
-        <div style="background: var(--surface); padding: 1.5rem; border-radius: var(--radius-lg); margin-bottom: 1rem; border-left: 4px solid var(--${event.color || 'primary'});">
-            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-                <div>
-                    <h4 style="font-size: 1.125rem; font-weight: 600; margin-bottom: 0.5rem;">${event.title}</h4>
-                    ${event.description ? `<p style="color: var(--text-secondary); margin-bottom: 0.5rem;">${event.description}</p>` : ''}
-                    ${event.time ? `<div style="color: var(--text-tertiary); font-size: 0.875rem;"><i class="fas fa-clock"></i> ${event.time}</div>` : ''}
-                </div>
-                <button class="btn-icon-small" onclick="deleteEvent('${event.id}')" title="Eliminar">
-                    <i class="fas fa-trash"></i>
-                </button>
-            </div>
-        </div>
-    `).join('');
+    AppState.selectedDate = AppState.calendarDate;
+    renderDailySchedule();
 }
 
 function openEventModal(eventId = null) {
@@ -1653,7 +1582,7 @@ function renderProductivityChart() {
     const ctx = document.getElementById('productivityChart');
     if (!ctx) return;
     
-    if (window.productivityChart && typeof window.productivityChart.destroy === 'function') {
+    if (window.productivityChart) {
         window.productivityChart.destroy();
     }
     
@@ -1701,7 +1630,7 @@ function renderTimeDistributionChart() {
     const ctx = document.getElementById('timeDistributionChart');
     if (!ctx) return;
     
-    if (window.timeChart && typeof window.timeChart.destroy === 'function') {
+    if (window.timeChart) {
         window.timeChart.destroy();
     }
     
@@ -1731,7 +1660,7 @@ function renderTasksStatusChart() {
     const ctx = document.getElementById('tasksStatusChart');
     if (!ctx) return;
     
-    if (window.tasksChart && typeof window.tasksChart.destroy === 'function') {
+    if (window.tasksChart) {
         window.tasksChart.destroy();
     }
     
@@ -1772,7 +1701,7 @@ function renderPomodoroSessionsChart() {
     const ctx = document.getElementById('pomodoroSessionsChart');
     if (!ctx) return;
     
-    if (window.pomodoroChart && typeof window.pomodoroChart.destroy === 'function') {
+    if (window.pomodoroChart) {
         window.pomodoroChart.destroy();
     }
     
@@ -1875,557 +1804,6 @@ function exportAsCSV() {
 }
 
 // ========================================
-// AI FEATURES
-// ========================================
-
-async function initAI() {
-    await AI.init();
-    
-    const aiChatToggle = document.getElementById('aiChatToggle');
-    const aiChatPanel = document.getElementById('aiChatPanel');
-    const aiChatClose = document.getElementById('aiChatClose');
-    const aiChatSend = document.getElementById('aiChatSend');
-    const aiChatInput = document.getElementById('aiChatInputField');
-    
-    aiChatToggle.addEventListener('click', () => {
-        aiChatPanel.classList.toggle('active');
-    });
-    
-    aiChatClose.addEventListener('click', () => {
-        aiChatPanel.classList.remove('active');
-    });
-    
-    aiChatSend.addEventListener('click', () => sendAIMessage());
-    aiChatInput.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') sendAIMessage();
-    });
-    
-    document.querySelectorAll('.ai-suggestion-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            aiChatInput.value = btn.dataset.suggestion;
-            sendAIMessage();
-        });
-    });
-}
-
-async function sendAIMessage() {
-    const input = document.getElementById('aiChatInputField');
-    const message = input.value.trim();
-    
-    if (!message) return;
-    
-    const messagesContainer = document.getElementById('aiChatMessages');
-    
-    messagesContainer.innerHTML += `
-        <div class="user-message">
-            <div class="user-avatar"><i class="fas fa-user"></i></div>
-            <div class="user-message-content">${message}</div>
-        </div>
-    `;
-    
-    input.value = '';
-    messagesContainer.scrollTop = messagesContainer.scrollHeight;
-    
-    try {
-        const response = await AI.chat(message);
-        
-        messagesContainer.innerHTML += `
-            <div class="ai-message">
-                <div class="ai-avatar"><i class="fas fa-robot"></i></div>
-                <div class="ai-message-content">${response}</div>
-            </div>
-        `;
-        
-        messagesContainer.scrollTop = messagesContainer.scrollHeight;
-    } catch (error) {
-        console.error('Error AI:', error);
-        showToast('Error al comunicarse con la IA', 'error');
-    }
-}
-
-async function generateSmartTasks() {
-    const goal = prompt('¿Qué meta quieres lograr?');
-    if (!goal) return;
-    
-    showLoading(true);
-    
-    try {
-        const context = {
-            currentTasks: AppState.tasks.length,
-            level: 'Intermedio'
-        };
-        
-        const tasks = await AI.generateTasks(goal, context);
-        
-        tasks.forEach(task => {
-            const newTask = {
-                id: Date.now().toString() + Math.random(),
-                title: task.title,
-                description: task.description,
-                priority: task.priority || 'medium',
-                tags: task.tags || [],
-                status: 'todo',
-                createdAt: new Date().toISOString()
-            };
-            AppState.tasks.unshift(newTask);
-        });
-        
-        saveToStorage('tasks', AppState.tasks);
-        renderTasks();
-        refreshDashboard();
-        showLoading(false);
-        showToast(`✨ ${tasks.length} tareas generadas con IA`, 'success');
-    } catch (error) {
-        showLoading(false);
-        showToast('Error al generar tareas', 'error');
-        console.error(error);
-    }
-}
-
-async function showAIInsights() {
-    document.getElementById('aiInsightsModal').classList.add('active');
-    const content = document.getElementById('aiInsightsContent');
-    
-    content.innerHTML = `
-        <div class="loading-state">
-            <i class="fas fa-spinner fa-spin"></i>
-            <p>Analizando tus datos...</p>
-        </div>
-    `;
-    
-    try {
-        const today = new Date().toDateString();
-        const completedToday = AppState.tasks.filter(t => 
-            t.completedAt && new Date(t.completedAt).toDateString() === today
-        ).length;
-        
-        const data = {
-            completedTasks: completedToday,
-            pendingTasks: AppState.tasks.filter(t => t.status !== 'completed').length,
-            pomodoroSessions: AppState.pomodoroSessions.length,
-            habitStreak: calculateHabitStreak(),
-            studyHours: Math.floor((AppState.pomodoroSessions.length * 25) / 60)
-        };
-        
-        const insights = await AI.analyzeProductivity(data);
-        
-        content.innerHTML = `
-            <div style="padding: 2rem;">
-                <div style="background: var(--primary-light); padding: 1.5rem; border-radius: var(--radius-xl); margin-bottom: 1.5rem;">
-                    <h3 style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem;">
-                        <i class="fas fa-brain"></i> Análisis de IA
-                    </h3>
-                    <p style="line-height: 1.8; white-space: pre-wrap;">${insights}</p>
-                </div>
-                <div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem;">
-                    <div style="text-align: center; padding: 1rem; background: var(--bg-secondary); border-radius: var(--radius-lg);">
-                        <div style="font-size: 2rem; font-weight: 700; color: var(--success);">${data.completedTasks}</div>
-                        <div style="font-size: 0.875rem; color: var(--text-secondary);">Completadas Hoy</div>
-                    </div>
-                    <div style="text-align: center; padding: 1rem; background: var(--bg-secondary); border-radius: var(--radius-lg);">
-                        <div style="font-size: 2rem; font-weight: 700; color: var(--primary);">${data.pomodoroSessions}</div>
-                        <div style="font-size: 0.875rem; color: var(--text-secondary);">Sesiones Pomodoro</div>
-                    </div>
-                    <div style="text-align: center; padding: 1rem; background: var(--bg-secondary); border-radius: var(--radius-lg);">
-                        <div style="font-size: 2rem; font-weight: 700; color: var(--warning);">${data.habitStreak}</div>
-                        <div style="font-size: 0.875rem; color: var(--text-secondary);">Días de Racha</div>
-                    </div>
-                    <div style="text-align: center; padding: 1rem; background: var(--bg-secondary); border-radius: var(--radius-lg);">
-                        <div style="font-size: 2rem; font-weight: 700; color: var(--info);">${data.studyHours}h</div>
-                        <div style="font-size: 0.875rem; color: var(--text-secondary);">Horas de Estudio</div>
-                    </div>
-                </div>
-            </div>
-        `;
-    } catch (error) {
-        content.innerHTML = `
-            <div style="text-align: center; padding: 3rem; color: var(--text-secondary);">
-                <i class="fas fa-exclamation-circle" style="font-size: 3rem; color: var(--danger); margin-bottom: 1rem;"></i>
-                <p>Error al generar insights. Verifica tu API key de Gemini.</p>
-            </div>
-        `;
-    }
-}
-
-// ========================================
-// QUICK CAPTURE
-// ========================================
-
-function initQuickCapture() {
-    const btn = document.getElementById('quickCaptureBtn');
-    const panel = document.getElementById('quickCapturePanel');
-    const closeBtn = document.getElementById('quickCaptureClose');
-    const text = document.getElementById('quickCaptureText');
-    const asTaskBtn = document.getElementById('quickCaptureAsTask');
-    const asNoteBtn = document.getElementById('quickCaptureAsNote');
-    
-    btn.addEventListener('click', () => {
-        panel.classList.toggle('active');
-        if (panel.classList.contains('active')) {
-            text.focus();
-        }
-    });
-    
-    closeBtn.addEventListener('click', () => {
-        panel.classList.remove('active');
-    });
-    
-    asTaskBtn.addEventListener('click', () => {
-        const content = text.value.trim();
-        if (!content) return;
-        
-        const task = {
-            id: Date.now().toString(),
-            title: content.substring(0, 100),
-            description: content.length > 100 ? content : '',
-            priority: 'medium',
-            status: 'todo',
-            createdAt: new Date().toISOString(),
-            tags: []
-        };
-        
-        AppState.tasks.unshift(task);
-        saveToStorage('tasks', AppState.tasks);
-        renderTasks();
-        refreshDashboard();
-        
-        text.value = '';
-        panel.classList.remove('active');
-        showToast('✅ Tarea creada desde captura rápida', 'success');
-        checkAchievement('first_quick_capture');
-    });
-    
-    asNoteBtn.addEventListener('click', () => {
-        const content = text.value.trim();
-        if (!content) return;
-        
-        const note = {
-            id: Date.now().toString(),
-            title: content.substring(0, 50),
-            content: content,
-            category: 'personal',
-            tags: [],
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString()
-        };
-        
-        AppState.notes.unshift(note);
-        saveToStorage('notes', AppState.notes);
-        renderNotes();
-        
-        text.value = '';
-        panel.classList.remove('active');
-        showToast('✅ Nota creada desde captura rápida', 'success');
-    });
-}
-
-// ========================================
-// GLOBAL SEARCH
-// ========================================
-
-function initGlobalSearch() {
-    const modal = document.getElementById('globalSearchModal');
-    const input = document.getElementById('globalSearchInput');
-    const results = document.getElementById('globalSearchResults');
-    
-    input.addEventListener('input', () => {
-        const query = input.value.toLowerCase().trim();
-        
-        if (!query) {
-            results.innerHTML = `
-                <div class="empty-state">
-                    <i class="fas fa-search"></i>
-                    <p>Escribe para buscar en toda tu información</p>
-                </div>
-            `;
-            return;
-        }
-        
-        const allResults = [];
-        
-        AppState.tasks.forEach(task => {
-            if (task.title.toLowerCase().includes(query) || 
-                (task.description && task.description.toLowerCase().includes(query))) {
-                allResults.push({
-                    type: 'Tarea',
-                    title: task.title,
-                    excerpt: task.description || '',
-                    action: () => {
-                        document.querySelector('[data-view="tasks"]').click();
-                        modal.classList.remove('active');
-                    }
-                });
-            }
-        });
-        
-        AppState.notes.forEach(note => {
-            if (note.title.toLowerCase().includes(query) || 
-                note.content.toLowerCase().includes(query)) {
-                allResults.push({
-                    type: 'Nota',
-                    title: note.title,
-                    excerpt: note.content.substring(0, 100),
-                    action: () => {
-                        document.querySelector('[data-view="notes"]').click();
-                        setTimeout(() => viewNoteDetail(note.id), 100);
-                        modal.classList.remove('active');
-                    }
-                });
-            }
-        });
-        
-        AppState.resources.forEach(resource => {
-            if (resource.title.toLowerCase().includes(query)) {
-                allResults.push({
-                    type: 'Recurso',
-                    title: resource.title,
-                    excerpt: resource.notes || resource.url || '',
-                    action: () => {
-                        document.querySelector('[data-view="resources"]').click();
-                        modal.classList.remove('active');
-                    }
-                });
-            }
-        });
-        
-        if (allResults.length === 0) {
-            results.innerHTML = `
-                <div class="empty-state">
-                    <i class="fas fa-search-minus"></i>
-                    <p>No se encontraron resultados para "${query}"</p>
-                </div>
-            `;
-            return;
-        }
-        
-        results.innerHTML = allResults.slice(0, 20).map(result => `
-            <div class="search-result-item" onclick='${result.action.toString().replace(/'/g, "\\'")}'>
-                <div class="search-result-header">
-                    <div class="search-result-title">${result.title}</div>
-                    <div class="search-result-type">${result.type}</div>
-                </div>
-                <div class="search-result-excerpt">${result.excerpt}</div>
-            </div>
-        `).join('');
-        
-        document.querySelectorAll('.search-result-item').forEach((el, i) => {
-            el.onclick = allResults[i].action;
-        });
-    });
-}
-
-// ========================================
-// FOCUS MODE
-// ========================================
-
-function initFocusMode() {
-    const overlay = document.getElementById('focusModeOverlay');
-    const exitBtn = document.getElementById('exitFocusMode');
-    let focusTimer = null;
-    let focusTimeLeft = 25 * 60;
-    
-    window.enterFocusMode = function(taskTitle = 'Sesión de Enfoque') {
-        document.getElementById('focusTaskTitle').textContent = taskTitle;
-        overlay.classList.add('active');
-        focusTimeLeft = 25 * 60;
-        updateFocusTimer();
-    };
-    
-    exitBtn.addEventListener('click', () => {
-        if (focusTimer) clearInterval(focusTimer);
-        overlay.classList.remove('active');
-    });
-    
-    document.getElementById('focusStart').addEventListener('click', () => {
-        if (focusTimer) clearInterval(focusTimer);
-        
-        focusTimer = setInterval(() => {
-            focusTimeLeft--;
-            updateFocusTimer();
-            
-            if (focusTimeLeft <= 0) {
-                clearInterval(focusTimer);
-                overlay.classList.remove('active');
-                showAchievement('¡Sesión Completada!', 'Has completado una sesión de enfoque');
-            }
-        }, 1000);
-    });
-    
-    function updateFocusTimer() {
-        const mins = Math.floor(focusTimeLeft / 60);
-        const secs = focusTimeLeft % 60;
-        document.getElementById('focusTimer').textContent = 
-            `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-    }
-}
-
-// ========================================
-// ACHIEVEMENTS & GAMIFICATION
-// ========================================
-
-const Achievements = {
-    first_task: { title: '¡Primera Tarea!', desc: 'Has creado tu primera tarea', unlocked: false },
-    first_complete: { title: 'Completador', desc: 'Completaste tu primera tarea', unlocked: false },
-    task_master: { title: 'Maestro de Tareas', desc: 'Has completado 10 tareas', unlocked: false },
-    week_streak: { title: 'Racha Semanal', desc: '7 días seguidos con hábitos completados', unlocked: false },
-    pomodoro_pro: { title: 'Pomodoro Pro', desc: '25 sesiones Pomodoro completadas', unlocked: false },
-    note_taker: { title: 'Tomador de Notas', desc: 'Has creado 10 notas', unlocked: false },
-    early_bird: { title: 'Madrugador', desc: 'Completaste una tarea antes de las 8 AM', unlocked: false },
-    night_owl: { title: 'Noctámbulo', desc: 'Trabajaste después de las 10 PM', unlocked: false },
-    first_quick_capture: { title: 'Captura Rápida', desc: 'Usaste la captura rápida por primera vez', unlocked: false }
-};
-
-function checkAchievement(key) {
-    if (!Achievements[key] || Achievements[key].unlocked) return;
-    
-    let unlock = false;
-    
-    switch(key) {
-        case 'first_task':
-            unlock = AppState.tasks.length >= 1;
-            break;
-        case 'first_complete':
-            unlock = AppState.tasks.some(t => t.status === 'completed');
-            break;
-        case 'task_master':
-            unlock = AppState.tasks.filter(t => t.status === 'completed').length >= 10;
-            break;
-        case 'week_streak':
-            unlock = calculateHabitStreak() >= 7;
-            break;
-        case 'pomodoro_pro':
-            unlock = AppState.pomodoroSessions.length >= 25;
-            break;
-        case 'note_taker':
-            unlock = AppState.notes.length >= 10;
-            break;
-        case 'first_quick_capture':
-            unlock = true;
-            break;
-    }
-    
-    if (unlock) {
-        Achievements[key].unlocked = true;
-        localStorage.setItem('achievements', JSON.stringify(Achievements));
-        showAchievement(Achievements[key].title, Achievements[key].desc);
-    }
-}
-
-function showAchievement(title, description) {
-    const toast = document.getElementById('achievementToast');
-    document.getElementById('achievementTitle').textContent = title;
-    document.getElementById('achievementDescription').textContent = description;
-    
-    toast.classList.add('show');
-    
-    setTimeout(() => {
-        toast.classList.remove('show');
-    }, 4000);
-}
-
-// ========================================
-// KEYBOARD SHORTCUTS
-// ========================================
-
-function initKeyboardShortcuts() {
-    document.addEventListener('keydown', (e) => {
-        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
-            if (!(e.ctrlKey || e.metaKey)) return;
-        }
-        
-        if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
-            e.preventDefault();
-            document.getElementById('globalSearchModal').classList.add('active');
-            document.getElementById('globalSearchInput').focus();
-        }
-        
-        if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'N') {
-            e.preventDefault();
-            document.getElementById('quickCapturePanel').classList.toggle('active');
-            document.getElementById('quickCaptureText').focus();
-        }
-        
-        if ((e.ctrlKey || e.metaKey) && e.key === '1') {
-            e.preventDefault();
-            document.querySelector('[data-view="dashboard"]').click();
-        }
-        
-        if ((e.ctrlKey || e.metaKey) && e.key === '2') {
-            e.preventDefault();
-            document.querySelector('[data-view="tasks"]').click();
-        }
-        
-        if ((e.ctrlKey || e.metaKey) && e.key === '3') {
-            e.preventDefault();
-            document.querySelector('[data-view="notes"]').click();
-        }
-    });
-}
-
-// ========================================
-// AUTO BACKUP
-// ========================================
-
-function initAutoBackup() {
-    setInterval(() => {
-        const data = {
-            tasks: AppState.tasks,
-            notes: AppState.notes,
-            habits: AppState.habits,
-            events: AppState.events,
-            resources: AppState.resources,
-            goals: AppState.goals,
-            pomodoroSessions: AppState.pomodoroSessions,
-            backupDate: new Date().toISOString()
-        };
-        
-        localStorage.setItem('autoBackup', JSON.stringify(data));
-        console.log('✅ Backup automático guardado');
-    }, 5 * 60 * 1000);
-}
-
-function restoreFromBackup() {
-    const backup = localStorage.getItem('autoBackup');
-    if (!backup) {
-        showToast('No hay backup disponible', 'warning');
-        return;
-    }
-    
-    if (confirm('¿Restaurar desde el último backup automático? Esto sobrescribirá los datos actuales.')) {
-        const data = JSON.parse(backup);
-        
-        AppState.tasks = data.tasks || [];
-        AppState.notes = data.notes || [];
-        AppState.habits = data.habits || [];
-        AppState.events = data.events || [];
-        AppState.resources = data.resources || [];
-        AppState.goals = data.goals || [];
-        AppState.pomodoroSessions = data.pomodoroSessions || [];
-        
-        Object.keys(data).forEach(key => {
-            if (key !== 'backupDate') {
-                saveToStorage(key, data[key]);
-            }
-        });
-        
-        location.reload();
-    }
-}
-
-// ========================================
-// UTILITIES
-// ========================================
-
-function showLoading(show) {
-    const overlay = document.getElementById('loadingOverlay');
-    if (show) {
-        overlay.classList.add('active');
-    } else {
-        overlay.classList.remove('active');
-    }
-}
-
-// ========================================
 // MODAL MANAGEMENT
 // ========================================
 
@@ -2452,7 +1830,213 @@ document.querySelectorAll('.modal-close, [data-close-modal]').forEach(btn => {
 // INITIALIZATION
 // ========================================
 
-document.addEventListener('DOMContentLoaded', async () => {
+// ========================================
+// CALENDARIO INTERACTIVO Y HORARIO DIARIO
+// ========================================
+
+const START_DATE = new Date('2025-10-20T00:00:00');
+const END_DATE = new Date('2026-10-19T23:59:59');
+
+AppState.selectedDate = START_DATE;
+
+const taskDetails = {
+    "Estudio Python": {
+        "Fundamentos: Variables, Tipos de Datos": "Concéntrate en entender qué es una variable y los tipos de datos básicos como strings, integers y floats. Realiza ejercicios prácticos en Codecademy.",
+        "Fundamentos: Listas, Diccionarios, Tuplas": "Aprende a manejar colecciones de datos. Practica cómo añadir, eliminar y acceder a elementos en listas y diccionarios.",
+        "Fundamentos: Bucles (for, while) y Condicionales": "Domina la lógica de control. Escribe pequeños scripts que usen bucles para iterar sobre listas y condicionales (if/else) para tomar decisiones.",
+        "Fundamentos: Funciones y Práctica": "Aprende a escribir tus propias funciones para reutilizar código. Recurso recomendado: Tutorial Interactivo de Codecademy 'Learn Python 3'.",
+        "Pandas: Series, DataFrames y Lectura de CSV": "Entiende las dos estructuras de datos principales de Pandas. Practica cargar un archivo CSV en un DataFrame con `pd.read_csv`.",
+        "Pandas: Selección de Datos con .loc[] e .iloc[]": "¡Crucial! Practica seleccionar filas y columnas específicas. `.loc` es para etiquetas, `.iloc` es para posiciones numéricas.",
+        "Pandas: Filtrado de Datos y Condiciones": "Aplica filtros para encontrar datos que cumplan criterios. Ejemplo: `df[df['ventas'] > 1000]`.",
+        "Pandas: Manejo de Datos Faltantes": "Aprende a identificar y manejar datos nulos usando `.isnull()`, `.dropna()` y `.fillna()`.",
+        "Pandas: Agrupación de Datos con .groupby()": "Una de las herramientas más poderosas. Agrupa datos por categorías para realizar cálculos agregados como suma o media.",
+        "Pandas: Combinar DataFrames (merge, concat)": "Aprende a unir diferentes tablas de datos. `merge` es similar a los JOINs de SQL.",
+        "Repaso y Aplicación en Proyectos": "Aplica todo lo aprendido en tus proyectos de GitHub. La práctica es la clave para consolidar el conocimiento."
+    },
+    "Estudio Anki": "Dedica este tiempo a repasar tus tarjetas de Anki. Concéntrate en conceptos de Python, SQL y Machine Learning para fortalecer tu memoria a largo plazo.",
+    "Contenido en Inglés (YouTube)": "Mira al menos 3 horas de contenido técnico en inglés. Canales recomendados: freeCodeCamp, Corey Schafer, StatQuest with Josh Starmer. Activa los subtítulos en inglés si es necesario.",
+    "Proyecto Python": "Trabaja en uno de tus 3 proyectos de portafolio en GitHub. Enfócate en la limpieza de datos, análisis exploratorio (EDA) o la implementación de un modelo.",
+    "Estudio Curso IA": "Dedica este bloque a tu curso de TalentoDigital.do. Revisa las clases, haz los ejercicios y prepara preguntas para la próxima sesión."
+};
+
+const pythonStudyPlan = [
+    "Fundamentos: Variables, Tipos de Datos", "Fundamentos: Listas, Diccionarios, Tuplas", "Fundamentos: Bucles (for, while) y Condicionales", "Fundamentos: Funciones y Práctica",
+    "Pandas: Series, DataFrames y Lectura de CSV", "Pandas: Selección de Datos con .loc[] e .iloc[]", "Pandas: Filtrado de Datos y Condiciones", "Pandas: Manejo de Datos Faltantes",
+    "Pandas: Agrupación de Datos con .groupby()", "Pandas: Combinar DataFrames (merge, concat)", "NumPy: Creación y Operaciones con Arrays", "Repaso y Aplicación en Proyectos"
+];
+
+const weeklySchedule = {
+    0: [
+        { time: '2:00 PM - 2:30 PM', task: 'Almuerzo / Empezar el día' },
+        { time: '2:30 PM - 3:00 PM', task: 'Estudio Anki', focus: true },
+        { time: '3:00 PM - 6:00 PM', task: 'Contenido en Inglés (YouTube)', focus: true },
+        { time: '6:00 PM - 7:00 PM', task: 'Ver Series en Inglés' },
+        { time: '7:00 PM - 9:30 PM', task: 'Tiempo Libre / Cena' }
+    ],
+    1: [
+        { time: '6:00 AM - 6:40 AM', task: 'Música en Inglés (Estudio)' },
+        { time: '6:40 AM - 7:20 AM', task: 'Traslado al Trabajo' },
+        { time: '8:25 AM - 9:25 AM', task: 'Contenido en Inglés (YouTube)' },
+        { time: '9:25 AM - 11:00 AM', task: 'Estudio Python', focus: true },
+        { time: '11:00 AM - 12:00 PM', task: 'Contenido en Inglés (YouTube)' },
+        { time: '12:00 PM - 1:00 PM', task: 'Almuerzo' },
+        { time: '1:00 PM - 3:00 PM', task: 'Trabajo' },
+        { time: '4:40 PM - 5:10 PM', task: 'Estudio Anki', focus: true },
+        { time: '6:10 PM - 7:10 PM', task: 'Proyecto Python', focus: true }
+    ],
+    2: [
+        { time: '6:00 AM - 6:40 AM', task: 'Música en Inglés (Estudio)' },
+        { time: '9:25 AM - 11:00 AM', task: 'Estudio Python', focus: true },
+        { time: '12:00 PM - 1:00 PM', task: 'Almuerzo' },
+        { time: '1:00 PM - 3:00 PM', task: 'Trabajo' },
+        { time: '4:40 PM - 5:10 PM', task: 'Estudio Anki', focus: true },
+        { time: '6:10 PM - 7:40 PM', task: 'Programar Servidor Haxball' }
+    ],
+    3: [
+        { time: '6:00 AM - 6:40 AM', task: 'Música en Inglés (Estudio)' },
+        { time: '9:25 AM - 11:00 AM', task: 'Estudio Python', focus: true },
+        { time: '12:00 PM - 1:00 PM', task: 'Almuerzo' },
+        { time: '1:00 PM - 3:00 PM', task: 'Trabajo' },
+        { time: '4:40 PM - 5:10 PM', task: 'Estudio Anki', focus: true },
+        { time: '6:10 PM - 7:10 PM', task: 'Proyecto Python', focus: true }
+    ],
+    4: [
+        { time: '6:00 AM - 6:40 AM', task: 'Música en Inglés (Estudio)' },
+        { time: '9:25 AM - 11:00 AM', task: 'Estudio Python', focus: true },
+        { time: '12:00 PM - 1:00 PM', task: 'Almuerzo' },
+        { time: '1:00 PM - 3:00 PM', task: 'Trabajo' },
+        { time: '4:40 PM - 5:10 PM', task: 'Estudio Anki', focus: true }
+    ],
+    5: [
+        { time: '6:00 AM - 6:40 AM', task: 'Música en Inglés (Estudio)' },
+        { time: '9:25 AM - 11:00 AM', task: 'Estudio Python', focus: true },
+        { time: '12:00 PM - 1:00 PM', task: 'Almuerzo' },
+        { time: '1:00 PM - 3:00 PM', task: 'Trabajo' },
+        { time: '4:40 PM - 5:10 PM', task: 'Estudio Anki', focus: true },
+        { time: '8:00 PM - 10:00 PM', task: 'Liga de Haxball', focus: true }
+    ],
+    6: [
+        { time: '2:00 PM - 2:30 PM', task: 'Almuerzo / Empezar el día' },
+        { time: '2:30 PM - 4:30 PM', task: 'Estudio Curso IA', focus: true },
+        { time: '4:30 PM - 5:30 PM', task: 'Proyecto Python', focus: true },
+        { time: '5:30 PM - 7:30 PM', task: 'Contenido en Inglés (YouTube)' },
+        { time: '9:50 PM - 11:50 PM', task: 'Canal de YouTube', focus: true }
+    ]
+};
+
+function getPythonTopicForDate(date) {
+    const diffTime = Math.abs(date - START_DATE);
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    const weekNumber = Math.floor(diffDays / 7);
+    return pythonStudyPlan[weekNumber] || "Repaso y Aplicación en Proyectos";
+}
+
+function renderInteractiveCalendar() {
+    const calendarGrid = document.getElementById('calendarGrid');
+    const calendarTitle = document.getElementById('calendarTitle');
+    
+    const year = AppState.calendarDate.getFullYear();
+    const month = AppState.calendarDate.getMonth();
+    
+    calendarTitle.textContent = new Date(year, month).toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
+    
+    const firstDay = new Date(year, month, 1).getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    
+    calendarGrid.innerHTML = '';
+    
+    for (let i = 0; i < firstDay; i++) {
+        calendarGrid.appendChild(document.createElement('div'));
+    }
+    
+    for (let day = 1; day <= daysInMonth; day++) {
+        const dayEl = document.createElement('div');
+        const currentDate = new Date(year, month, day);
+        
+        if (currentDate >= START_DATE && currentDate <= END_DATE) {
+            dayEl.className = 'calendar-day-interactive';
+            dayEl.textContent = day;
+            dayEl.dataset.date = currentDate.toISOString().split('T')[0];
+            
+            dayEl.addEventListener('click', (e) => {
+                AppState.selectedDate = new Date(`${e.target.dataset.date}T00:00:00`);
+                renderDailySchedule();
+                document.querySelector('[data-view="calendar"]').click();
+                setTimeout(() => {
+                    const scheduleSection = document.getElementById('daySchedule');
+                    if (scheduleSection) {
+                        scheduleSection.scrollIntoView({ behavior: 'smooth' });
+                    }
+                }, 100);
+            });
+            
+            const today = new Date();
+            if (day === today.getDate() && month === today.getMonth() && year === today.getFullYear()) {
+                dayEl.classList.add('today');
+            }
+        } else {
+            dayEl.className = 'calendar-day-interactive disabled';
+            dayEl.textContent = day;
+        }
+        
+        calendarGrid.appendChild(dayEl);
+    }
+}
+
+function renderDailySchedule() {
+    const daySchedule = document.getElementById('daySchedule');
+    if (!daySchedule) return;
+    
+    const dayOfWeek = AppState.selectedDate.getDay();
+    const schedule = JSON.parse(JSON.stringify(weeklySchedule[dayOfWeek]));
+    const pythonTopic = getPythonTopicForDate(AppState.selectedDate);
+    
+    const dateTitle = AppState.selectedDate.toLocaleDateString('es-ES', { 
+        weekday: 'long', 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric' 
+    });
+    
+    let scheduleHTML = `
+        <div style="margin-bottom: 1.5rem;">
+            <h3 style="font-size: 1.5rem; font-weight: 700; color: var(--secondary); margin-bottom: 0.5rem;">
+                Mi Día a Día: ${dateTitle}
+            </h3>
+            <p style="color: var(--text-secondary);">Pasa el ratón sobre cada tarea para ver más detalles y recursos.</p>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+    `;
+    
+    schedule.forEach(item => {
+        let taskKey = item.task;
+        let taskDisplay = item.task;
+        
+        if (item.task === 'Estudio Python') {
+            taskKey = pythonTopic;
+            taskDisplay = `Estudio Python: ${pythonTopic}`;
+        }
+        
+        const description = (taskDetails[item.task] && taskDetails[item.task][taskKey]) 
+            ? taskDetails[item.task][taskKey] 
+            : (taskDetails[item.task] || "No hay detalles adicionales para esta tarea.");
+        
+        scheduleHTML += `
+            <div class="schedule-item ${item.focus ? 'focus' : 'normal'} has-tooltip">
+                <div style="display: flex; align-items: center; gap: 1rem;">
+                    <div class="schedule-time" style="min-width: 150px;">${item.time}</div>
+                    <div class="schedule-task">${taskDisplay}</div>
+                </div>
+                <div class="tooltip">${description}</div>
+            </div>
+        `;
+    });
+    
+    scheduleHTML += '</div>';
+    daySchedule.innerHTML = scheduleHTML;
+}
+
+document.addEventListener('DOMContentLoaded', () => {
     initNavigation();
     initTheme();
     initPomodoro();
@@ -2464,29 +2048,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     initGoals();
     initExport();
     
-    await initAI();
-    initQuickCapture();
-    initGlobalSearch();
-    initFocusMode();
-    initKeyboardShortcuts();
-    initAutoBackup();
+    renderInteractiveCalendar();
+    renderDailySchedule();
     
-    window.generateSmartTasks = generateSmartTasks;
-    window.showAIInsights = showAIInsights;
-    window.restoreFromBackup = restoreFromBackup;
-    
+    // Load initial view
     refreshDashboard();
     
-    setTimeout(() => {
-        checkAchievement('first_task');
-        checkAchievement('task_master');
-        checkAchievement('note_taker');
-        checkAchievement('pomodoro_pro');
-        checkAchievement('week_streak');
-    }, 1000);
-    
     console.log('✅ Plan de Pasantía IA - Sistema Inicializado');
-    console.log('🤖 Funcionalidades de IA:', AI.apiKey ? 'Activadas' : 'Desactivadas (verifica GEMINI_API_KEY)');
-    console.log('⌨️  Atajos: Ctrl+K (Buscar), Ctrl+Shift+N (Captura Rápida), Ctrl+1-3 (Navegación)');
-    showToast('¡Bienvenido a tu Centro de Productividad Mejorado con IA!', 'success');
+    showToast('¡Bienvenido a tu Centro de Productividad!', 'success');
 });
